@@ -1,0 +1,28 @@
+device-info:
+    deviceId: 1
+    deviceType: 'RaspberryPi'
+    mac-address: '00:0c:29:59:59:7b'
+rabbit-mq:
+    username: 'speedtest'
+    password: '1nfield'
+    send-queue: 'sendQueue'
+    syslog-queue: 'syslogQueue'
+message-service:
+    uri: 'http://scottf.ddns.net/SpeedService/'
+    post-svc: 'postResult.json'
+
+request-service:
+    uri: 'http://scottf.ddns.net/SpeedService/'
+    get-config-svc: 'getSessionConfiguration.json'
+    update-status-svc: 'updateStatus.json'
+general:
+    ping-timeout: 60 #seconds
+    remote-timeout: 60 #seconds 
+    request-config-timeout: 60 #seconds
+    update-request-status-timeout: 60 #seconds
+    sleep-on-boot: 30
+    path: '/opt/SpeedDevice/'
+speed-test:
+    mini-enabled: false
+    mini-server: 'http://192.168.56.222/mini/'
+    simple-enabled: false
