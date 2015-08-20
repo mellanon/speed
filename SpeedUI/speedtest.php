@@ -49,9 +49,6 @@
 <body id="bod">
 
 <div class="container" id="cont">
-<div class="alert alert-success text-center" role="alert">
-    <strong>Speed Test Request Saved!</strong>
-</div>
 <form role="form" class="form-signin" action="#" id="speedtest">
     <div class="form-group">
         <h2>Speed Test Request</h2>
@@ -72,10 +69,6 @@
 </div>
   <button type="button" id="btnSubmit" class="btn btn-default">Submit</button>
 </form>
-
-<div class="alert alert-success text-center" role="alert">
-    <strong>Speed Test Request Saved!</strong>
-</div>
 
 
 <!--      <iframe src="index.php<?php if(isset($mac)){ echo '?mac=00:0c:29:59:59:7b'; }?>" style="zoom:0.60" width="100%" height="350" frameborder="0"></iframe>-->
@@ -126,17 +119,36 @@ $("#btnSubmit1").click(function(){
 $('#btnSubmit').click(function () {
     $.ajax({
         url: "../SpeedService/saveRequest.json",
-        type: "POST",
-        dataType: 'json',
-        data: { data: "{\"rsp\":" + $("#rsp").val() + ",\"mac\":\"" + $("#mac").val() + "\",\"name\":\"Andreas\",\"serviceorder\": 200074, \"status\":1,\"bwdown\":30,\"bwup\":10}" },
-        success: function(json) {
-            console.log(JSON.stringify(json.topics));
-            var json2 = jQuery.parseJSON(json.data);
-            console.log(json2.rqId);
-            /*$.each(json.topics, function(idx, topic){
-                $("#bod").html('<a href="' + topic.link_src + '">' + topic.link_text + "</a>");
-        });*/
-        }
+            type: "POST",
+            dataType: 'json',
+            data: { data: "{\"rsp\":" + $("#rsp").val() + ",\"mac\":\"" + $("#mac").val() + "\",\"name\":\"Andreas\",\"serviceorder\": 200074, \"status\":1,\"bwdown\":30,\"bwup\":10}" },
+            success: function(json) {
+                var json2 = jQuery.parseJSON(json.data);
+                rqId = json2.rqId;
+                $('#bod').spin(opts) // Creates a 'large' white Spinner
+                $("#speedtest").fadeTo("slow", 0.1);
+                $( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div>" ).insertAfter( ".spinner" );
+                //clearInterval(refresher);
+                refresher = setInterval(function(){
+                    $.ajax({
+                        url: "../SpeedService/getResult.json",
+                            type: "POST",
+                            dataType: 'json',
+                            data: { getresult: "{\"rqId\":" + rqId + "}" },
+                            success: function(json) {
+                                var resp = jQuery.parseJSON(json.data);
+                                jQuery.each(resp.result, function(index, item) {
+                                    $("#listener-alert").html("<strong>" + item + "</strong>");
+                                    if (item === 'Speed Test Completed!'){
+                                        $('#bod').spin(false);
+                                        $('#listener').hide();
+                                        $("#speedtest").fadeTo("slow", 1);
+                                    }
+                                });
+                            }
+                    }); 
+                },1000);
+            }
     });
 });
 

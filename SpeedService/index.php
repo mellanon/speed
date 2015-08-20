@@ -188,7 +188,8 @@ function getResult($rqId){
     $rqId = mysqli_real_escape_string($con, $rqId);
 
     if($rqId > 0){
-        $sql = "SELECT msg FROM result INNER JOIN request ON rqid = requestid WHERE requestid = '$rqId' AND rqstatus < 3 ORDER BY id DESC LIMIT 3";
+        //$sql = "SELECT msg FROM result INNER JOIN request ON rqid = requestid WHERE requestid = '$rqId' AND rqstatus < 3 ORDER BY id DESC LIMIT 3";
+        $sql = "SELECT msg FROM result INNER JOIN request ON rqid = requestid WHERE requestid = '$rqId' AND rqstatus < 5 ORDER BY id DESC LIMIT 1";
     }else{
         return false;
     }
