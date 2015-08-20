@@ -137,6 +137,75 @@ function updateRequestStatus($rqId, $rqStatus){
     return true;
 }
 
+function saveRequest($data){
+    $con=mysqli_connect("localhost","root","bitnami","speedtest");
+
+    // Check connection
+    if (mysqli_connect_errno()) {
+        echo "Failed to connect to MySQL: " . mysqli_connect_error();
+    }
+
+    //Hard code to simulate the real use case where the parameters is picked up from the service order
+    $rsp = mysqli_real_escape_string($con, $data['rsp']);
+    $mac = mysqli_real_escape_string($con, $data['mac']);
+    $name = mysqli_real_escape_string($con, $data['name']);
+    $serviceorder = mysqli_real_escape_string($con, $data['serviceorder']);
+    $status = mysqli_real_escape_string($con, $data['status']);
+    $bwdown = mysqli_real_escape_string($con, $data['bwdown']);
+    $bwup = mysqli_real_escape_string($con, $data['bwup']);
+
+    if (isset($data['created'])){
+        $created = $data['created'];
+    }else{
+        $created = date('Y-m-d H:i:s');
+    }
+
+    if (!(isset($rsp) && isset($mac) && isset($name) && isset($serviceorder) && isset($status) && isset($bwdown) && isset($bwup))){
+        return null;
+    }
+
+    $sql = "INSERT INTO request (rqmac, rqserviceorderid, rqrspid, rqstatus, rqbwdown, rqbwup, rqcreated, rqname) VALUES('$mac', '$serviceorder', '$rsp', '$status', '$bwdown', '$bwup', '$created', '$name')";
+    if (!mysqli_query($con,$sql)) {
+        return null;
+    }else{
+        $rqId = mysqli_insert_id($con);
+        return json_encode(array("rqId" => $rqId));
+    }
+    mysqli_close($con);
+}
+
+
+function getResult($rqId){
+    $con=mysqli_connect("localhost","root","bitnami","speedtest");
+
+    // Check connection
+    if (mysqli_connect_errno()) {
+        echo "Failed to connect to MySQL: " . mysqli_connect_error();
+        return false;
+    }
+
+    // escape variables for security
+    $rqId = mysqli_real_escape_string($con, $rqId);
+
+    if($rqId > 0){
+        $sql = "SELECT msg FROM result INNER JOIN request ON rqid = requestid WHERE requestid = '$rqId' AND rqstatus < 3 ORDER BY id DESC LIMIT 3";
+    }else{
+        return false;
+    }
+
+    $result = mysqli_query($con, $sql);
+    if (mysqli_num_rows($result) > 0) {
+        while($row = $result->fetch_row()) {
+            $resultlist[]=$row[0];
+        }
+    }else{
+        $resultlist = null;
+    }
+    $json = json_encode(array("result" => $resultlist));
+
+    return $json;
+}
+
 function getSpeedServerList($deviceId = 0, $deviceMac){
     $con=mysqli_connect("localhost","root","bitnami","speedtest");
 
@@ -351,47 +420,38 @@ if( strcasecmp($_GET['method'],'hello') == 0){
 
 if($_SERVER['REQUEST_METHOD'] == "GET"){
     switch($_GET['method']){
-        case "getSessionConfiguration":
-            $data = json_decode($_GET['getconfiguration'],true);
-print_r($data);
-            $deviceId = $data['deviceId'];
-            $deviceMac = $data['deviceMac'];
-            $requestTime = date("Y-m-d H:i:s"); #Time when the function was called
-            //Log on request history that new config sent to device X
-            if(isset($deviceId) || isset($deviceMac)){
-                $serverList = getSpeedServerList($deviceId, $deviceMac, $requestTime);
-                if(!$serverList ){
-                    $response['code'] = 5;
-                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
-                    $response['data'] .= 'Unable to get server list due to an internal server error.'.$_GET['getconfiguration']; 
-                }else{
+        case "getResult":
+            if(isset($_GET['getresult'])){
+                $data = json_decode($_GET['getresult'],true);
+                $rqId = $data['rqId'];
+                if(isset($rqId)){
                     $response['code'] = 1;
                     $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
-                    $response['data'] = $serverList; #"Message created $requestTime from $devicdId $deviceMac has been saved";
+                    $response['data'] = getResult($rqId);
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to provide speed test results.'.$_GET['getresult'];
                 }
-            }else{
-                $response['code'] = 5;
-                $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
-                $response['data'] .= 'Unable to get server list due to insufficient data.'.$_GET['getconfiguration'];
             }
-/*
-        case "updateRequestStatus":
-            $data = json_decode($_GET['updaterequeststatus'],true);
-            $rqId = $data['rqid'];
-            $rqStatus = $data['rqstatus'];
-            if((isset($rqId) && isset($rqStatus)) && updateRequestStatus($rqId, $rqStatus)){
-                $response['code'] = 1;
-                $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
-                $response['data'] = "Set response status $rqStatus on request=$rqId.";
-            }else{
-                $response['code'] = 5;
-                $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
-                $response['data'] .= 'Insufficient data provided to save the result.'.$_GET['updaterequeststatus'];           
+        case "saveRequest":
+            if(isset($_GET['data'])){
+                $data = json_decode($_GET['data'],true);
+                $result = saveRequest($data);
+
+                if(!is_null($result)){
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = $result;
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to save speed test request.'.$_GET['data'];
+                }
             }
- */
     }
 }
-            
+          
 
 
 if($_SERVER['REQUEST_METHOD'] == "POST"){
@@ -452,12 +512,42 @@ if($_SERVER['REQUEST_METHOD'] == "POST"){
                     $response['data'] .= 'Insufficient data provided to save the result.'.$_POST['updaterequeststatus'];           
                 }
             }
+        case "getResult":
+            if(isset($_POST['getresult'])){
+                $data = json_decode($_POST['getresult'],true);
+                $rqId = $data['rqId'];
+
+                if(isset($rqId)){
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = getResult($rqId);
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to provide speed test results.'.$_POST['getresult'];
+                }
+            }
+        case "saveRequest":
+            if(isset($_POST['data'])){
+                $data = json_decode($_POST['data'],true);
+                $result = saveRequest($data);
+
+                if(!is_null($result)){
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = $result;
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to save speed test request.'.$_POST['data'];
+                }
+            }
     }
 }
- 
+
 // --- Step 4: Deliver Response
- 
+
 // Return Response to browser
 deliver_response($_GET['format'], $response);
-     
+
 ?>
