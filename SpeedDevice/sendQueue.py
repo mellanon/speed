@@ -3,7 +3,7 @@
 import pika
 import yaml
 
-with open('config.yaml', 'r') as f:
+with open('/opt/SpeedDevice/config.yaml', 'r') as f:
     config = yaml.load(f)
 
 ##Rabbit MQ configuration

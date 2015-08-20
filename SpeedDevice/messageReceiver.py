@@ -21,7 +21,7 @@ import pprint
 #TODO: Robustness if RabbitMQ fails?
 
 #Load configuration file
-with open('config.yaml', 'r') as f:
+with open('/opt/SpeedDevice/config.yaml', 'r') as f:
     config = yaml.load(f)
 
 #Global variables
