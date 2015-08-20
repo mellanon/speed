@@ -56,7 +56,7 @@ if (isset($_GET['post'])){
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 <!-- Custom styles for this template -->
-<link href="bootstrap/css/signin.css" rel="stylesheet">
+<link href="css/signin.css" rel="stylesheet">
 
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 <!--[if lt IE 9]>
