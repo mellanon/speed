@@ -65,9 +65,42 @@ function saveResult($deviceId, $sessionId, $timeCreated, $msg, $rqid){
     return true;
 }
 
+
+function getSpeed($rqId){
+    $con=mysqli_connect("localhost","root","bitnami","speedtest");
+
+    // Check connection
+    if (mysqli_connect_errno()) {
+        echo "Failed to connect to MySQL: " . mysqli_connect_error();
+    }
+
+    // escape variables for security
+    $rqId = mysqli_real_escape_string($con, $rqId);
+
+    $sql = "SELECT rqstatus, rqbwdownmbit, rqbwupmbit, rqbwdown, rqbwup FROM request WHERE rqid = $rqId";
+    
+    $result = mysqli_query($con, $sql);
+
+    if (mysqli_num_rows($result) > 0){
+        $row = mysqli_fetch_row($result);
+        $json = json_encode(array(
+            "rqstatus" => $row[0],
+            "rqbwdownmbit" => $row[1],
+            "rqbwupmbit" => $row[2],
+            "rqbwdown" => $row[3],
+            "rqbwup" => $row[4],
+        ));
+        mysqli_close($con);
+        return $json;
+    }else{
+        mysqli_close($con);
+        return null;
+    }
+}
+
 function timeOutRequest($deviceId = 0, $deviceMac){
     $con=mysqli_connect("localhost","root","bitnami","speedtest");
-    
+
     if (mysqli_connect_errno()) {
         echo "Failed to connect to MySQL: " . mysqli_connect_error();
         return false;
@@ -175,7 +208,7 @@ function saveRequest($data){
     }
 
     //Check if any existing request before creating a new one
-    $sql = "SELECT rqid FROM request WHERE rqmac = '$mac' AND rqstatus = 1 ORDER BY rqid DESC LIMIT 1";
+    $sql = "SELECT rqid FROM request WHERE rqmac = '$mac' AND rqstatus < 3 ORDER BY rqid DESC LIMIT 1";
     $result = mysqli_query($con, $sql);
 
     if (mysqli_num_rows($result) > 0){
@@ -469,6 +502,21 @@ if($_SERVER['REQUEST_METHOD'] == "GET"){
                     $response['data'] .= 'Insufficient data provided to save speed test request.'.$_GET['data'];
                 }
             }
+        case "getSpeed":
+            if(isset($_GET['params'])){
+                $data = json_decode($_GET['params'],true);
+                $rqId = $data['rqId'];
+
+                if(isset($rqId)){
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = getSpeed($rqId);
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to save get final speed test result.'.$_GET['params'];
+                }
+            }
     }
 }
           
@@ -560,6 +608,22 @@ if($_SERVER['REQUEST_METHOD'] == "POST"){
                     $response['code'] = 5;
                     $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
                     $response['data'] .= 'Insufficient data provided to save speed test request.'.$_POST['data'];
+                }
+            }
+
+        case "getSpeed":
+            if(isset($_POST['params'])){
+                $data = json_decode($_POST['params'],true);
+                $rqId = $data['rqId'];
+
+                if(isset($rqId)){
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = getSpeed($rqId);
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to save get final speed test result.'.$_POST['params'];
                 }
             }
     }

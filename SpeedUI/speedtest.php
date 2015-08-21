@@ -34,8 +34,7 @@
     display: inline-block;
     white-space: nowrap;
     position: fixed;
-    padding: 15px;
-  top: 85%;
+  top: 50%;
   left: 50%;
   /* bring your own prefixes */
   transform: translate(-50%, -50%);
@@ -44,11 +43,27 @@
 
 }
 
+.alert-z {
+    z-index: 1002;
+}
+
 html, body, .container {
     height: 100%;
 }
 .container {
     display: table;
+    vertical-align: middle;
+}
+.container2 {
+    z-index:1111;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* bring your own prefixes */
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    display: block;
     vertical-align: middle;
 }
 .vertical-center-row {
@@ -70,37 +85,45 @@ html, body, .container {
     <div class="row vertical-center-row">
         <div class="col-lg-12">
             <div class="row ">
-          <div class="alert alert-success" role="alert">
-        <span class="glyphicon glyphicon-cloud-download" aria-hidde="true"></span>
-        <strong>Download:</strong> 30.51 Mbit/s
-      </div>
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-cloud-upload" aria-hidde="true"></span>
-        <strong>Upload:</strong> 2.41 Mbit/s
-      </div>
-<form role="form" class="form-signin" action="#" id="speedtest">
-    <div class="form-group">
-        <h2>Speed Test Request</h2>
-        <p>Use this form to create speed test requests which is required before you can initiate a speed test using the Northpower Speed Test Device!</p>
-    </div>
-  <div class="form-group">
-    <label for="mac">MAC address (00:0c:29:59:59:7b):</label>
-    <input type="text" class="form-control" id="mac" value="00:0c:29:59:59:7b" autofocus required name="mac">
-  </div>
-<div class="form-group">
-  <label for="sel1">Service Provider (will be selected from service order):</label>
-  <select class="form-control" id="rsp" name="rsp">
-    <option value="0">None</option>
-    <option value="1" selected>Spark</option>
-    <option value="2">Vodafone</option>
-    <option value="3">CallPlu</option>
-  </select>
-</div>
-  <button type="button" id="btnSubmit" class="btn btn-default">Submit</button>
-</form>
-</div> <!-- /row -->
-</div> <!-- /col-lg -->
-</div> <!-- /row vertical -->
+                <form role="form" class="form-signin" action="#" id="speedtest">
+                    <div class="form-group" id="formheading">
+                        <h2>Speed Test Request</h2>
+                        <p>Use this form to create speed test requests which is required before you can initiate a speed test using the Northpower Speed Test Device!</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="mac">MAC address (00:0c:29:59:59:7b):</label>
+                        <input type="text" class="form-control" id="mac" value="00:0c:29:59:59:7b" autofocus required name="mac">
+                    </div>
+                    <div class="form-group">
+                        <label for="sel1">Service Provider (will be selected from service order):</label>
+                        <select class="form-control" id="rsp" name="rsp">
+                            <option value="0">None</option>
+                            <option value="1" selected>Spark</option>
+                            <option value="2">Vodafone</option>
+                            <option value="3">CallPlu</option>
+                        </select>
+                    </div>
+                    <button type="button" id="btnSubmit" class="btn btn-lg btn-default">Submit</button>
+                </form>
+            </div> <!-- /row -->
+        </div> <!-- /col-lg -->
+    </div> <!-- /row vertical -->
+</div> <!-- /container -->
+<div class="container2" id="cont-result" style="display: none;">
+    <div class="row vertical-center-row">
+        <div class="col-lg-12">
+            <div class="row ">
+                <div class="form-signin" id="speed-result">
+                    <div class="form-group" id="speed-result-heading">
+                        <h2>Speed Test Result</h2>
+                    </div>
+                    <div class="form-group" id="speed-result-heading">
+                        <button type="button" id="btnRestart" class="btn btn-lg btn-default">Restart</button>
+                    </div>
+                </div>
+            </div> <!-- /row -->
+        </div> <!-- /col-lg -->
+    </div> <!-- /row vertical -->
 </div> <!-- /container -->
 <script>
 var opts = {
@@ -125,24 +148,20 @@ var opts = {
         , hwaccel: false // Whether to use hardware acceleration
         , position: 'absolute' // Element positioning
 }
-/*$('#bod').spin(opts) // Creates a 'large' white Spinner
-$( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Heads up!</strong> This alert needs your attention, but it's not super important.</div></div>" ).insertAfter( ".spinner" );
-$("#speedtest").fadeTo("slow", 0.1);
- */
-$("#btnSubmit1").click(function(){
-    $.post("../SpeedService/saveRequest.json",
-        {
-            data: "{\"rsp\":" + $("#rsp").val() + ",\"mac\":\"" + $("#mac").val() + "\",\"name\":\"Andreas\",\"serviceorder\": 200074, \"status\":1,\"bwdown\":30,\"bwup\":10}"
-        },
-        function(response, status){
-            var obj = jQuery.parseJSON( '{"code":1,"status":200,"data":"{"rqId":49}"}' );
-            //var obj = $.parseJSON(response);
-            //$("#mac").val('hej'+obj.data.rqId);
-            $("#mac").val(obj.data.rqId);
-            //alert("Data: " + response + "\nStatus: " + status);
-        });
+var rqId = 0;
+var showDown = false;
+var showUp = false;
+var rqstatus = 0;
+var rqbwdownmbit = 0;
+var rqbwupmbit = 0;
+var rqbwdown = 0;
+var rqbwup = 0;
 
+$('#btnRestart').click(function() {
+    $("#cont-result").hide();
+    $("#speedtest").show();
 });
+
 
 $('#btnSubmit').click(function () {
     $.ajax({
@@ -154,9 +173,10 @@ $('#btnSubmit').click(function () {
                 var json2 = jQuery.parseJSON(json.data);
                 rqId = json2.rqId;
                 $('#bod').spin(opts) // Creates a 'large' white Spinner
-                $("#speedtest").fadeTo("slow", 0.1);
+                //$("#speedtest").fadeTo("slow", 0.1);
+                $("#speedtest").hide();
+                //$("#cont-result").show();
                 $( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div>" ).insertAfter( ".spinner" );
-//                $( "<div class='container'><div class='row vertical-center-row'><div class='col-lg-12'><div class='row '><div class='col-xs-4 col-xs-offset-4'><div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div></div></div></div></div></div>" ).insertAfter( ".spinner" );
                 //clearInterval(refresher);
                 refresher = setInterval(function(){
                     $.ajax({
@@ -171,26 +191,67 @@ $('#btnSubmit').click(function () {
                                     if (item === 'Speed Test Completed!'){
                                         $('#bod').spin(false);
                                         $('#listener').hide();
-                                        $("#speedtest").fadeTo("slow", 1);
+                                        $("#speedtest").hide();
+                                        if (!showDown){
+                                            $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong>Download:</strong>" + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                            $("#alert-down").fadeTo("slow", 1);
+                                            showDown = true;
+                                        }
+                                        if (!showUp){
+                                            $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong>Upload:</strong>" + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                            $("#alert-up").fadeTo("slow", 1);
+                                            showUp = true;
+                                        }
                                         clearInterval(refresher);
+                                        $("#cont-result").show();
+                                        if (parseFloat(rqbwdownmbit) < parseFloat(rqbwdown)){
+                                            console.log('rqbwdownmbit < rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
+                                            $("#alert-down").addClass("alert-danger");
+                                        }else{
+                                            console.log('rqbwdownmbit > rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
+                                            $("#alert-down").addClass("alert-success");
+                                        }
+                                        if (parseFloat(rqbwupmbit) < parseFloat(rqbwup)){
+                                            console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
+                                            $("#alert-up").addClass("alert-danger");
+                                        }else{
+                                            console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
+                                            $("#alert-up").addClass("alert-success");
+                                        }
                                     }
                                 });
                             }
                     }); 
+                    $.ajax({
+                        url: "../SpeedService/getSpeed.json",
+                            type: "POST",
+                            dataType: "json",
+                            data: { params: "{\"rqId\":" + rqId + "}" },
+                            success: function(json) {
+                                var speedr = jQuery.parseJSON(json.data);
+                                rqstatus = speedr.rqstatus;
+                                rqbwdownmbit = speedr.rqbwdownmbit;
+                                rqbwupmbit = speedr.rqbwupmbit;
+                                rqbwdown = speedr.rqbwdown;
+                                rqbwup = speedr.rqbwup;
+
+                                if (rqbwdownmbit > 0 && !showDown){
+                                    $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong>Download:</strong>" + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                    showDown = true;
+                                    $("#alert-down").fadeTo("slow", 1);
+                                }
+                                if (rqbwupmbit > 0 && !showUp){
+                                    $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong>Upload:</strong>" + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                    showUp = true;
+                                    $("#alert-up").fadeTo("slow", 1);
+                                }
+                            }
+                    });
                 },1000);
             }
     });
 });
 
-$("#btnGetResult").click(function(){
-    $.post("http://scottf.ddns.net/SpeedService/getResult.json",
-        {
-            getresult: "<?php if(isset($rqId)){ echo '{\"rqId\":'.$rqId.'}'; }else{ echo '{\"rqId\":43}';}?>",
-        },
-        function(data, status){
-            alert("Data: " + data + "\nStatus: " + status);
-        });
-});
 </script>
 
 </body>
