@@ -9,7 +9,7 @@ import logging.handlers
 import yaml
 import time
 
-with open('config.yaml', 'r') as f:
+with open('/opt/SpeedDevice/config.yaml', 'r') as f:
     config = yaml.load(f)
 
 #Global variables
