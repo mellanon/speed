@@ -45,6 +45,7 @@
 
 .alert-z {
     z-index: 1002;
+    white-space: nowrap;
 }
 
 html, body, .container {
@@ -91,8 +92,11 @@ html, body, .container {
                         <p>Use this form to create speed test requests which is required before you can initiate a speed test using the Northpower Speed Test Device!</p>
                     </div>
                     <div class="form-group">
-                        <label for="mac">MAC address (00:0c:29:59:59:7b):</label>
-                        <input type="text" class="form-control" id="mac" value="00:0c:29:59:59:7b" autofocus required name="mac">
+                        <label for="mac">MAC address (will be scanned from barcode):</label>
+                        <select class="form-control" id="mac" name="mac">
+                            <option value="00:0c:29:59:59:7b" selected>VM Andreas Laptop</option>
+                            <option value="b8:27:eb:46:0f:4d">Raspberry Pi</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="sel1">Service Provider (will be selected from service order):</label>
@@ -100,7 +104,8 @@ html, body, .container {
                             <option value="0">None</option>
                             <option value="1" selected>Spark</option>
                             <option value="2">Vodafone</option>
-                            <option value="3">CallPlu</option>
+                            <option value="3">CallPlus</option>
+                            <option value="4">Tele2 (Sweden)</option>
                         </select>
                     </div>
                     <button type="button" id="btnSubmit" class="btn btn-lg btn-default">Submit</button>
@@ -168,7 +173,7 @@ $('#btnSubmit').click(function () {
         url: "../SpeedService/saveRequest.json",
             type: "POST",
             dataType: 'json',
-            data: { data: "{\"rsp\":" + $("#rsp").val() + ",\"mac\":\"" + $("#mac").val() + "\",\"name\":\"Andreas\",\"serviceorder\": 200074, \"status\":1,\"bwdown\":30,\"bwup\":10}" },
+            data: { data: "{\"rsp\":" + $("#rsp").val() + ",\"mac\":\"" + $("#mac").val() + "\",\"name\":\"Andreas\",\"serviceorder\": 200074, \"status\":1,\"bwdown\":10,\"bwup\":0.5}" },
             success: function(json) {
                 var json2 = jQuery.parseJSON(json.data);
                 rqId = json2.rqId;
@@ -193,12 +198,12 @@ $('#btnSubmit').click(function () {
                                         $('#listener').hide();
                                         $("#speedtest").hide();
                                         if (!showDown){
-                                            $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong>Download:</strong>" + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                            $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
                                             $("#alert-down").fadeTo("slow", 1);
                                             showDown = true;
                                         }
                                         if (!showUp){
-                                            $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong>Upload:</strong>" + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                            $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
                                             $("#alert-up").fadeTo("slow", 1);
                                             showUp = true;
                                         }
@@ -235,13 +240,13 @@ $('#btnSubmit').click(function () {
                                 rqbwdown = speedr.rqbwdown;
                                 rqbwup = speedr.rqbwup;
 
-                                if (rqbwdownmbit > 0 && !showDown){
-                                    $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong>Download:</strong>" + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                if (parseFloat(rqbwdownmbit) > 0 && !showDown){
+                                    $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
                                     showDown = true;
                                     $("#alert-down").fadeTo("slow", 1);
                                 }
-                                if (rqbwupmbit > 0 && !showUp){
-                                    $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong>Upload:</strong>" + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                if (parseFloat(rqbwupmbit) > 0 && !showUp){
+                                    $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
                                     showUp = true;
                                     $("#alert-up").fadeTo("slow", 1);
                                 }
