@@ -1,3 +1,5 @@
+Copyright Andreas Astrom
+
 Enable SSH
 $ sudo mv /etc/init/ssh.conf.back /etc/init/ssh.conf
 $ sudo start ssh
