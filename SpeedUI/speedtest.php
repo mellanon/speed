@@ -30,12 +30,31 @@
 
 <style>
 .listener {
-    max-width: 600px;
+    z-index: 1002;
+    display: inline-block;
+    white-space: nowrap;
+    position: fixed;
     padding: 15px;
-    margin: 0 auto;
-    position:relative;top:300px;
+  top: 85%;
+  left: 50%;
+  /* bring your own prefixes */
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+
 }
 
+html, body, .container {
+    height: 100%;
+}
+.container {
+    display: table;
+    vertical-align: middle;
+}
+.vertical-center-row {
+    display: table-cell;
+    vertical-align: middle;
+}
 
 </style>
 
@@ -47,8 +66,18 @@
 </head>
 
 <body id="bod">
-
 <div class="container" id="cont">
+    <div class="row vertical-center-row">
+        <div class="col-lg-12">
+            <div class="row ">
+          <div class="alert alert-success" role="alert">
+        <span class="glyphicon glyphicon-cloud-download" aria-hidde="true"></span>
+        <strong>Download:</strong> 30.51 Mbit/s
+      </div>
+      <div class="alert alert-danger" role="alert">
+        <span class="glyphicon glyphicon-cloud-upload" aria-hidde="true"></span>
+        <strong>Upload:</strong> 2.41 Mbit/s
+      </div>
 <form role="form" class="form-signin" action="#" id="speedtest">
     <div class="form-group">
         <h2>Speed Test Request</h2>
@@ -69,10 +98,9 @@
 </div>
   <button type="button" id="btnSubmit" class="btn btn-default">Submit</button>
 </form>
-
-
-<!--      <iframe src="index.php<?php if(isset($mac)){ echo '?mac=00:0c:29:59:59:7b'; }?>" style="zoom:0.60" width="100%" height="350" frameborder="0"></iframe>-->
-
+</div> <!-- /row -->
+</div> <!-- /col-lg -->
+</div> <!-- /row vertical -->
 </div> <!-- /container -->
 <script>
 var opts = {
@@ -89,9 +117,9 @@ var opts = {
         , speed: 1 // Rounds per second
         , trail: 60 // Afterglow percentage
         , fps: 20 // Frames per second when using setTimeout() as a fallback for CSS
-        , zIndex: 2e9 // The z-index (defaults to 2000000000)
+        , zIndex: 1000 // The z-index (defaults to 2000000000)
         , className: 'spinner' // The CSS class to assign to the spinner
-        , top: '20%' // Top position relative to parent
+        , top: '50%' // Top position relative to parent
         , left: '50%' // Left position relative to parent
         , shadow: false // Whether to render a shadow
         , hwaccel: false // Whether to use hardware acceleration
@@ -128,6 +156,7 @@ $('#btnSubmit').click(function () {
                 $('#bod').spin(opts) // Creates a 'large' white Spinner
                 $("#speedtest").fadeTo("slow", 0.1);
                 $( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div>" ).insertAfter( ".spinner" );
+//                $( "<div class='container'><div class='row vertical-center-row'><div class='col-lg-12'><div class='row '><div class='col-xs-4 col-xs-offset-4'><div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div></div></div></div></div></div>" ).insertAfter( ".spinner" );
                 //clearInterval(refresher);
                 refresher = setInterval(function(){
                     $.ajax({
@@ -143,6 +172,7 @@ $('#btnSubmit').click(function () {
                                         $('#bod').spin(false);
                                         $('#listener').hide();
                                         $("#speedtest").fadeTo("slow", 1);
+                                        clearInterval(refresher);
                                     }
                                 });
                             }

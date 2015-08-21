@@ -43,6 +43,16 @@ function saveResult($deviceId, $sessionId, $timeCreated, $msg, $rqid){
     $timeCreated = mysqli_real_escape_string($con, $timeCreated);
     $msg = mysqli_real_escape_string($con, $msg);
     $rqid = mysqli_real_escape_string($con, $rqid);
+
+    //Save speed test bandwidth reading on request
+    if (preg_match('/^Download:.?(\d*\.?\d*).*/', $msg, $matches)){
+        $sql = "UPDATE request SET rqbwdownmbit = $matches[1] WHERE rqid = ".$rqid;
+        mysqli_query($con, $sql);
+    }elseif (preg_match('/^Upload:.?(\d*\.?\d*).*/', $msg, $matches)){
+        $sql = "UPDATE request SET rqbwupmbit = $matches[1] WHERE rqid = ".$rqid;
+        mysqli_query($con, $sql);
+    }
+
     $sql = "INSERT INTO result(deviceid, sessionid, msg, created, requestid) VALUES('$deviceId', '$sessionId', '$msg', '$timeCreated', $rqid)";
     
     if (!mysqli_query($con,$sql)) {
@@ -162,6 +172,15 @@ function saveRequest($data){
 
     if (!(isset($rsp) && isset($mac) && isset($name) && isset($serviceorder) && isset($status) && isset($bwdown) && isset($bwup))){
         return null;
+    }
+
+    //Check if any existing request before creating a new one
+    $sql = "SELECT rqid FROM request WHERE rqmac = '$mac' AND rqstatus = 1 ORDER BY rqid DESC LIMIT 1";
+    $result = mysqli_query($con, $sql);
+
+    if (mysqli_num_rows($result) > 0){
+        $row = mysqli_fetch_row($result);
+        return json_encode(array("rqId" => $row[0]));
     }
 
     $sql = "INSERT INTO request (rqmac, rqserviceorderid, rqrspid, rqstatus, rqbwdown, rqbwup, rqcreated, rqname) VALUES('$mac', '$serviceorder', '$rsp', '$status', '$bwdown', '$bwup', '$created', '$name')";
