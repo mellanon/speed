@@ -34,13 +34,20 @@
     display: inline-block;
     white-space: nowrap;
     position: fixed;
-  top: 50%;
-  left: 50%;
-  /* bring your own prefixes */
-  transform: translate(-50%, -50%);
-  -webkit-transform: translate(-50%, -50%);
-  -ms-transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    /* bring your own prefixes */
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+}
 
+.time {
+    font-weight: bold; 
+    margin: auto;
+    width: 20%;
+    margin: 0 auto; 
+    display:inherit;
 }
 
 .alert-z {
@@ -131,6 +138,43 @@ html, body, .container {
     </div> <!-- /row vertical -->
 </div> <!-- /container -->
 <script>
+var timeOutInterval = null;
+
+function startTimer(duration, display) {
+        var start = Date.now(),
+        diff,
+        minutes,
+        seconds;
+
+        function timer() {
+            // get the number of seconds that have elapsed since 
+            // startTimer() was called
+            diff = duration - (((Date.now() - start) / 1000) | 0);
+
+            // does the same job as parseInt truncates the float
+            minutes = (diff / 60) | 0;
+            seconds = (diff % 60) | 0;
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            display.textContent = minutes + ":" + seconds; 
+            
+            if (diff <= 0) {
+                // add one second so that the count down starts at the full duration
+                // example 05:00 not 04:59
+                start = Date.now() + 1000;
+                $('#bod').spin(false);
+                $('#listener').hide();
+                $("#speedtest").show();
+                clearInterval(timeOutInterval);
+            }
+        };
+        // we don't want to wait a full second before the timer starts
+        timer();
+        timeOutInterval = setInterval(timer, 1000);
+}
+
 var opts = {
     lines: 17 // The number of lines to draw
         , length: 45 // The length of each line
@@ -161,6 +205,7 @@ var rqbwdownmbit = 0;
 var rqbwupmbit = 0;
 var rqbwdown = 0;
 var rqbwup = 0;
+var timeOutTimer = null;
 
 $('#btnRestart').click(function() {
     $("#cont-result").hide();
@@ -178,10 +223,11 @@ $('#btnSubmit').click(function () {
                 var json2 = jQuery.parseJSON(json.data);
                 rqId = json2.rqId;
                 $('#bod').spin(opts) // Creates a 'large' white Spinner
-                //$("#speedtest").fadeTo("slow", 0.1);
-                $("#speedtest").hide();
+                    //$("#speedtest").fadeTo("slow", 0.1);
+                    $("#speedtest").hide();
                 //$("#cont-result").show();
                 $( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div>" ).insertAfter( ".spinner" );
+                $( "<br/><span id='time' class='time'></span></div>" ).appendTo( "#listener-alert" );
                 //clearInterval(refresher);
                 refresher = setInterval(function(){
                     $.ajax({
@@ -191,40 +237,42 @@ $('#btnSubmit').click(function () {
                             data: { getresult: "{\"rqId\":" + rqId + "}" },
                             success: function(json) {
                                 var resp = jQuery.parseJSON(json.data);
-                                jQuery.each(resp.result, function(index, item) {
-                                    $("#listener-alert").html("<strong>" + item + "</strong>");
-                                    if (item === 'Speed Test Completed!'){
-                                        $('#bod').spin(false);
-                                        $('#listener').hide();
-                                        $("#speedtest").hide();
-                                        if (!showDown){
-                                            $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                            $("#alert-down").fadeTo("slow", 1);
-                                            showDown = true;
+                                if (resp.result !== null){
+                                    jQuery.each(resp.result, function(index, item) {
+                                        $("#listener-alert").html("<strong>" + item + "</strong>");
+                                        if (item === 'Speed Test Completed!'){
+                                            $('#bod').spin(false);
+                                            $('#listener').hide();
+                                            $("#speedtest").hide();
+                                            if (!showDown){
+                                                $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                                $("#alert-down").fadeTo("slow", 1);
+                                                showDown = true;
+                                            }
+                                            if (!showUp){
+                                                $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                                $("#alert-up").fadeTo("slow", 1);
+                                                showUp = true;
+                                            }
+                                            clearInterval(refresher);
+                                            $("#cont-result").show();
+                                            if (parseFloat(rqbwdownmbit) < parseFloat(rqbwdown)){
+                                                console.log('rqbwdownmbit < rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
+                                                $("#alert-down").addClass("alert-danger");
+                                            }else{
+                                                console.log('rqbwdownmbit > rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
+                                                $("#alert-down").addClass("alert-success");
+                                            }
+                                            if (parseFloat(rqbwupmbit) < parseFloat(rqbwup)){
+                                                console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
+                                                $("#alert-up").addClass("alert-danger");
+                                            }else{
+                                                console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
+                                                $("#alert-up").addClass("alert-success");
+                                            }
                                         }
-                                        if (!showUp){
-                                            $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                            $("#alert-up").fadeTo("slow", 1);
-                                            showUp = true;
-                                        }
-                                        clearInterval(refresher);
-                                        $("#cont-result").show();
-                                        if (parseFloat(rqbwdownmbit) < parseFloat(rqbwdown)){
-                                            console.log('rqbwdownmbit < rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
-                                            $("#alert-down").addClass("alert-danger");
-                                        }else{
-                                            console.log('rqbwdownmbit > rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
-                                            $("#alert-down").addClass("alert-success");
-                                        }
-                                        if (parseFloat(rqbwupmbit) < parseFloat(rqbwup)){
-                                            console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
-                                            $("#alert-up").addClass("alert-danger");
-                                        }else{
-                                            console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
-                                            $("#alert-up").addClass("alert-success");
-                                        }
-                                    }
-                                });
+                                    });
+                                }
                             }
                     }); 
                     $.ajax({
@@ -234,27 +282,51 @@ $('#btnSubmit').click(function () {
                             data: { params: "{\"rqId\":" + rqId + "}" },
                             success: function(json) {
                                 var speedr = jQuery.parseJSON(json.data);
-                                rqstatus = speedr.rqstatus;
-                                rqbwdownmbit = speedr.rqbwdownmbit;
-                                rqbwupmbit = speedr.rqbwupmbit;
-                                rqbwdown = speedr.rqbwdown;
-                                rqbwup = speedr.rqbwup;
+                                if (speedr.rqstatus !== null){
+                                    rqstatus = speedr.rqstatus;
+                                    rqbwdownmbit = speedr.rqbwdownmbit;
+                                    rqbwupmbit = speedr.rqbwupmbit;
+                                    rqbwdown = speedr.rqbwdown;
+                                    rqbwup = speedr.rqbwup;
 
-                                if (parseFloat(rqbwdownmbit) > 0 && !showDown){
-                                    $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                    showDown = true;
-                                    $("#alert-down").fadeTo("slow", 1);
-                                }
-                                if (parseFloat(rqbwupmbit) > 0 && !showUp){
-                                    $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                    showUp = true;
-                                    $("#alert-up").fadeTo("slow", 1);
+                                    if (parseFloat(rqbwdownmbit) > 0 && !showDown){
+                                        $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                        showDown = true;
+                                        $("#alert-down").fadeTo("slow", 1);
+                                    }
+                                    if (parseFloat(rqbwupmbit) > 0 && !showUp){
+                                        $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                        showUp = true;
+                                        $("#alert-up").fadeTo("slow", 1);
+                                    }
                                 }
                             }
                     });
+                    if (timeOutTimer == null){
+                        $.ajax({
+                            url: "../SpeedService/getTimeOut.json",
+                                type: "POST",
+                                dataType: "json",
+                                data: { macparam: "{\"mac\":\"" + $("#mac").val() + "\"}" },
+                                success: function(json) {
+                                    var timer = jQuery.parseJSON(json.data);
+                                    timeoutseconds = timer.timeoutseconds;
+                                    if (timeoutseconds > 0){
+                                        console.log(timeoutseconds);
+                                        timeOutTimer = timeoutseconds;
+                                        display = document.querySelector('#time');//display = $('#time');
+                                        startTimer(timeOutTimer, display);
+                                    }
+                                }
+                        });
+                    }
                 },1000);
             }
     });
+
+
+    //timeOutTimer = setInterval(function(){
+    //}, 1000);
 });
 
 </script>
