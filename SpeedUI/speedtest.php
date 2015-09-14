@@ -101,7 +101,8 @@ html, body, .container {
                     <div class="form-group">
                         <label for="mac">MAC address (will be scanned from barcode):</label>
                         <select class="form-control" id="mac" name="mac">
-                            <option value="00:0c:29:59:59:7b" selected>VM Andreas Laptop</option>
+                            <option value="02:5b:47:a3:57:eb" selected>Banana Pi</option>
+                            <option value="00:0c:29:59:59:7b">VM Andreas Laptop</option>
                             <option value="b8:27:eb:46:0f:4d">Raspberry Pi</option>
                         </select>
                     </div>
@@ -139,6 +140,7 @@ html, body, .container {
 </div> <!-- /container -->
 <script>
 var timeOutInterval = null;
+var refresher = null;
 
 function startTimer(duration, display) {
         var start = Date.now(),
@@ -167,7 +169,8 @@ function startTimer(duration, display) {
                 $('#bod').spin(false);
                 $('#listener').hide();
                 $("#speedtest").show();
-                clearInterval(timeOutInterval);
+                timeOutRequests($("#mac").val());
+                location.reload();
             }
         };
         // we don't want to wait a full second before the timer starts
@@ -175,6 +178,33 @@ function startTimer(duration, display) {
         timeOutInterval = setInterval(timer, 1000);
 }
 
+function resetUI(){
+    clearInterval(refresher);
+    clearInterval(timeOutInterval);
+    rqId = 0;
+    showDown = false;
+    showUp = false;
+    rqstatus = 0;
+    rqbwdownmbit = 0;
+    rqbwupmbit = 0;
+    rqbwdown = 0;
+    rqbwup = 0;
+    timeOutTimer = null;
+    timeOutInterval = null;
+}
+
+function timeOutRequests(mac){
+    $.ajax({
+        url: "../SpeedService/timeOut.json",
+            type: "POST",
+            dataType: "json",
+            data: { timeoutmac: "{\"mac\":\"" + mac + "\"}" },
+            success: function(json) {
+                return true;
+            }
+    });
+    return false;
+}
 var opts = {
     lines: 17 // The number of lines to draw
         , length: 45 // The length of each line
@@ -201,8 +231,8 @@ var rqId = 0;
 var showDown = false;
 var showUp = false;
 var rqstatus = 0;
-var rqbwdownmbit = 0;
-var rqbwupmbit = 0;
+var rqbwdownmbit = -1;
+var rqbwupmbit = -1;
 var rqbwdown = 0;
 var rqbwup = 0;
 var timeOutTimer = null;
@@ -210,6 +240,7 @@ var timeOutTimer = null;
 $('#btnRestart').click(function() {
     $("#cont-result").hide();
     $("#speedtest").show();
+    location.reload();
 });
 
 
@@ -223,9 +254,7 @@ $('#btnSubmit').click(function () {
                 var json2 = jQuery.parseJSON(json.data);
                 rqId = json2.rqId;
                 $('#bod').spin(opts) // Creates a 'large' white Spinner
-                    //$("#speedtest").fadeTo("slow", 0.1);
                     $("#speedtest").hide();
-                //$("#cont-result").show();
                 $( "<div class='listener' id='listener'><div class='alert alert-info' role='alert' id='listener-alert'><strong>Listening for Speed Test Results...</strong></div></div>" ).insertAfter( ".spinner" );
                 $( "<br/><span id='time' class='time'></span></div>" ).appendTo( "#listener-alert" );
                 //clearInterval(refresher);
@@ -236,72 +265,58 @@ $('#btnSubmit').click(function () {
                             dataType: 'json',
                             data: { getresult: "{\"rqId\":" + rqId + "}" },
                             success: function(json) {
+
                                 var resp = jQuery.parseJSON(json.data);
                                 if (resp.result !== null){
                                     jQuery.each(resp.result, function(index, item) {
                                         $("#listener-alert").html("<strong>" + item + "</strong>");
                                         if (item === 'Speed Test Completed!'){
+                                            $.ajax({
+                                                url: "../SpeedService/getSpeed.json",
+                                                    type: "POST",
+                                                    dataType: "json",
+                                                    data: { params: "{\"rqId\":" + rqId + "}" },
+                                                    success: function(json) {
+                                                        var speedr = jQuery.parseJSON(json.data);
+                                                        if (speedr.rqstatus !== null){
+                                                            var rqstatus = speedr.rqstatus;
+                                                            var rqbwdownmbit = speedr.rqbwdownmbit;
+                                                            var rqbwupmbit = speedr.rqbwupmbit;
+                                                            var rqbwdown = speedr.rqbwdown;
+                                                            var rqbwup = speedr.rqbwup;
+                                                            if (parseFloat(rqbwdownmbit) > 0 && !showDown){
+                                                                $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                                                $("#alert-down").fadeTo("slow", 1);
+                                                                showDown = true;
+                                                            }
+                                                            if (parseFloat(rqbwupmbit) > 0 && !showUp){
+                                                                $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
+                                                                $("#alert-up").fadeTo("slow", 1);
+                                                                showUp = true;
+                                                            }
+                                                            if (parseFloat(rqbwdownmbit) < parseFloat(rqbwdown)){
+                                                                $("#alert-down").addClass("alert-danger");
+                                                            }else{
+                                                                $("#alert-down").addClass("alert-success");
+                                                            }
+                                                            if (parseFloat(rqbwupmbit) < parseFloat(rqbwup)){
+                                                                $("#alert-up").addClass("alert-danger");
+                                                            }else{
+                                                                $("#alert-up").addClass("alert-success");
+                                                            }
+                                                        }
+                                                    }
+                                            });
                                             $('#bod').spin(false);
                                             $('#listener').hide();
                                             $("#speedtest").hide();
-                                            if (!showDown){
-                                                $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                                $("#alert-down").fadeTo("slow", 1);
-                                                showDown = true;
-                                            }
-                                            if (!showUp){
-                                                $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                                $("#alert-up").fadeTo("slow", 1);
-                                                showUp = true;
-                                            }
                                             clearInterval(refresher);
                                             $("#cont-result").show();
-                                            if (parseFloat(rqbwdownmbit) < parseFloat(rqbwdown)){
-                                                console.log('rqbwdownmbit < rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
-                                                $("#alert-down").addClass("alert-danger");
-                                            }else{
-                                                console.log('rqbwdownmbit > rqbwdown' + rqbwdownmbit + '|' + rqbwdown);
-                                                $("#alert-down").addClass("alert-success");
-                                            }
-                                            if (parseFloat(rqbwupmbit) < parseFloat(rqbwup)){
-                                                console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
-                                                $("#alert-up").addClass("alert-danger");
-                                            }else{
-                                                console.log('rqbwupmbit < rqbwup' + rqbwupmbit + '|' + rqbwup);
-                                                $("#alert-up").addClass("alert-success");
-                                            }
                                         }
                                     });
                                 }
                             }
                     }); 
-                    $.ajax({
-                        url: "../SpeedService/getSpeed.json",
-                            type: "POST",
-                            dataType: "json",
-                            data: { params: "{\"rqId\":" + rqId + "}" },
-                            success: function(json) {
-                                var speedr = jQuery.parseJSON(json.data);
-                                if (speedr.rqstatus !== null){
-                                    rqstatus = speedr.rqstatus;
-                                    rqbwdownmbit = speedr.rqbwdownmbit;
-                                    rqbwupmbit = speedr.rqbwupmbit;
-                                    rqbwdown = speedr.rqbwdown;
-                                    rqbwup = speedr.rqbwup;
-
-                                    if (parseFloat(rqbwdownmbit) > 0 && !showDown){
-                                        $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                        showDown = true;
-                                        $("#alert-down").fadeTo("slow", 1);
-                                    }
-                                    if (parseFloat(rqbwupmbit) > 0 && !showUp){
-                                        $("<div class='alert alert-z' id='alert-up' role='alert'><span class='glyphicon glyphicon-cloud-upload' aria-hidden='true'></span><span class='sr-only'>Upload:</span><strong> Upload:</strong> " + rqbwupmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
-                                        showUp = true;
-                                        $("#alert-up").fadeTo("slow", 1);
-                                    }
-                                }
-                            }
-                    });
                     if (timeOutTimer == null){
                         $.ajax({
                             url: "../SpeedService/getTimeOut.json",

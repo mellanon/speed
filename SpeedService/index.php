@@ -686,6 +686,22 @@ if($_SERVER['REQUEST_METHOD'] == "POST"){
                     $response['data'] .= 'Insufficient data provided to get timeout for the given request.'.$_POST['macparam'];
                 }
             }
+
+        case "timeOut":
+            if(isset($_POST['timeoutmac'])){
+                $data = json_decode($_POST['timeoutmac'],true);
+
+                if(isset($data['mac'])){
+                    $mac = $data['mac'];
+                    $response['code'] = 1;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] = timeOutRequest(0, $mac);
+                }else{
+                    $response['code'] = 5;
+                    $response['status'] = $api_response_code[ $response['code'] ]['HTTP Response'];
+                    $response['data'] .= 'Insufficient data provided to timeout old requests.'.$_POST['timeoutmac'];
+                }
+            }
     }
 }
 
