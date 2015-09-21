@@ -101,7 +101,8 @@ html, body, .container {
                     <div class="form-group">
                         <label for="mac">MAC address (will be scanned from barcode):</label>
                         <select class="form-control" id="mac" name="mac">
-                            <option value="02:5b:47:a3:57:eb" selected>Banana Pi</option>
+                            <option value="00:1e:06:10:2d:70" selected>ODROID C1+</option>
+                            <option value="02:5b:47:a3:57:eb">Banana Pi</option>
                             <option value="00:0c:29:59:59:7b">VM Andreas Laptop</option>
                             <option value="b8:27:eb:46:0f:4d">Raspberry Pi</option>
                         </select>
@@ -284,6 +285,8 @@ $('#btnSubmit').click(function () {
                                                             var rqbwupmbit = speedr.rqbwupmbit;
                                                             var rqbwdown = speedr.rqbwdown;
                                                             var rqbwup = speedr.rqbwup;
+                                                            var rqshareurl = speedr.rqshareurl;
+
                                                             if (parseFloat(rqbwdownmbit) > 0 && !showDown){
                                                                 $("<div class='alert alert-z' id='alert-down' role='alert'><span class='glyphicon glyphicon-cloud-download' aria-hidden='true'></span><span class='sr-only'>Download:</span><strong> Download:</strong> " + rqbwdownmbit + " Mbit/s</div>").insertAfter("#speed-result-heading");
                                                                 $("#alert-down").fadeTo("slow", 1);
@@ -303,6 +306,9 @@ $('#btnSubmit').click(function () {
                                                                 $("#alert-up").addClass("alert-danger");
                                                             }else{
                                                                 $("#alert-up").addClass("alert-success");
+                                                            }
+                                                            if (rqshareurl !== null){
+                                                                $("<div class='alert alert-z' id='alert-speed' role='alert'><img src='" + rqshareurl + "'/></div>").insertAfter("#speed-result-heading");
                                                             }
                                                         }
                                                     }

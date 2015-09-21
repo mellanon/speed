@@ -81,6 +81,12 @@ function saveResult($deviceId, $sessionId, $timeCreated, $msg, $rqid){
         mysqli_query($con, $sql);
     }
 
+    //Save speed test share URL
+    if (preg_match('/^Share results:\s(http.*png)/', $msg, $matches)){
+        $sql = "UPDATE request SET rqshareurl = '$matches[1]' WHERE rqid = ".$rqid;
+        mysqli_query($con, $sql);
+    }
+
     $sql = "INSERT INTO result(deviceid, sessionid, msg, created, requestid) VALUES('$deviceId', '$sessionId', '$msg', '$timeCreated', $rqid)";
     
     if (!mysqli_query($con,$sql)) {
@@ -105,7 +111,7 @@ function getSpeed($rqId){
     // escape variables for security
     $rqId = mysqli_real_escape_string($con, $rqId);
 
-    $sql = "SELECT rqstatus, rqbwdownmbit, rqbwupmbit, rqbwdown, rqbwup FROM request WHERE rqid = $rqId";
+    $sql = "SELECT rqstatus, rqbwdownmbit, rqbwupmbit, rqbwdown, rqbwup, rqshareurl FROM request WHERE rqid = $rqId";
     
     $result = mysqli_query($con, $sql);
 
@@ -117,6 +123,7 @@ function getSpeed($rqId){
             "rqbwupmbit" => $row[2],
             "rqbwdown" => $row[3],
             "rqbwup" => $row[4],
+            "rqshareurl" => $row[5],
         ));
         mysqli_close($con);
         return $json;
@@ -702,6 +709,7 @@ if($_SERVER['REQUEST_METHOD'] == "POST"){
                     $response['data'] .= 'Insufficient data provided to timeout old requests.'.$_POST['timeoutmac'];
                 }
             }
+            
     }
 }
 
