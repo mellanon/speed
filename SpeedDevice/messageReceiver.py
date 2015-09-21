@@ -54,6 +54,8 @@ updateRequestStatusTimeout = config["general"]["update-request-status-timeout"]
 speedTestMiniEnabled = config["speed-test"]["mini-enabled"]
 speedTestMiniServer = config["speed-test"]["mini-server"]
 speedTestSimple = config["speed-test"]["simple-enabled"]
+speedTestShare = config["speed-test"]["share-enabled"]
+
 path = config["general"]["path"]
 
 sessionId = ""
@@ -220,6 +222,9 @@ def speedtest(request):
 
         if speedTestSimple:
             cmd.append('--simple')
+
+        if speedTestShare:
+            cmd.append('--share')
  
         processMessage(logMsg, rqid=rqId)
 
